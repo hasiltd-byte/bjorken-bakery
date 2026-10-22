@@ -10,6 +10,7 @@ import {addDays,pickupTimes,nextPickupDate,fridayDate} from '../shared/schedule.
 test('Preview gates, Israeli dates and nullable pricing',()=>{
  const s={...settings,ordersOpen:true,whatsapp:'0501234567',whatsappVerified:true,ownerApproved:true,imagesApproved:true,catalogApproved:true,pickupDate:'2099-10-23'};
  assert.equal(liveReady(s,false),false);assert.equal(liveReady(s,true),true);assert.equal(liveReady({...s,whatsappVerified:false},true),false);assert.equal(liveReady({...s,closeAt:'2000-01-01T00:00:00Z'},true),false);
+ assert.equal(liveReady({...s,imagesApproved:false,catalogApproved:false},true),true);assert.equal(liveReady({...s,ownerApproved:false},true),false);assert.equal(liveReady({...s,ordersOpen:false},true),false);
  assert.equal(israelDate(new Date('2026-10-22T22:00:00Z')),'2026-10-23');
  const msg=orderMessage({name:'בדיקה',phone:'0501234567',date:'2026-10-23',pickup:'09:00',items:[{name:'מאפה',price:null,quantity:2}]});assert.match(msg,/מחיר באישור המאפייה/);assert.ok(!msg.includes('₪0'));
 });
