@@ -1,0 +1,82 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {MongoMemoryReplSet} from 'mongodb-memory-server';
+import {createService} from '../lib/server/service.mjs';
+import {settings} from '../shared/catalog.mjs';
+import {liveReady,israelDate,orderMessage} from '../shared/order.mjs';
+import {randomUUID} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
+import {addDays,pickupTimes,nextPickupDate,fridayDate} from '../shared/schedule.mjs';
+test('Preview gates, Israeli dates and nullable pricing',()=>{
+ const s={...settings,ordersOpen:true,whatsapp:'0501234567',whatsappVerified:true,ownerApproved:true,imagesApproved:true,catalogApproved:true,pickupDate:'2099-10-23'};
+ assert.equal(liveReady(s,false),false);assert.equal(liveReady(s,true),true);assert.equal(liveReady({...s,whatsappVerified:false},true),false);assert.equal(liveReady({...s,closeAt:'2000-01-01T00:00:00Z'},true),false);
+ assert.equal(israelDate(new Date('2026-10-22T22:00:00Z')),'2026-10-23');
+ const msg=orderMessage({name:'בדיקה',phone:'0501234567',date:'2026-10-23',pickup:'09:00',items:[{name:'מאפה',price:null,quantity:2}]});assert.match(msg,/מחיר באישור המאפייה/);assert.ok(!msg.includes('₪0'));
+});
+test('weekly collection: weekdays, Friday override, Saturday, blocked dates and elapsed Israel time',()=>{
+ const now=new Date('2026-10-22T11:10:00Z');
+ assert.equal(pickupTimes(settings,'2026-10-25',now)[0],'07:30');
+ assert.equal(pickupTimes(settings,'2026-10-25',now).at(-1),'15:30');
+ assert.deepEqual(pickupTimes(settings,'2026-10-24',now),[]);
+ assert.equal(pickupTimes(settings,'2026-10-23',now)[0],'08:00');
+ assert.equal(pickupTimes(settings,'2026-10-23',now).at(-1),'12:30');
+ assert.equal(pickupTimes(settings,'2026-10-22',now)[0],'14:30');
+ assert.deepEqual(pickupTimes({...settings,blockedDates:['2026-10-25']},'2026-10-25',now),[]);
+ assert.deepEqual(pickupTimes(settings,'2026-02-30',now),[]);
+ assert.deepEqual(pickupTimes(settings,'2026-10-21',now),[]);
+ assert.equal(fridayDate(settings,now),'2026-10-23');
+});
+test('isolated MongoDB: auth, CRUD, images, public persistence, preview, atomic inventory, idempotency and status workflow',async()=>{
+ const replica=await MongoMemoryReplSet.create({binary:{downloadDir:'.local/mongodb-binaries'},replSet:{count:1}});let service;
+ const opts={mongoUri:replica.getUri('bjorken_test'),dbName:'bjorken_test',username:'test-owner',password:'unique-test-password-32-characters',cloudName:'bjorken-test',imageUploader:async bytes=>{assert.ok(bytes.length>100);return {url:'https://res.cloudinary.com/bjorken-test/image/upload/v1/uploaded.jpg',publicId:'uploaded'}}};
+ try{
+  service=await createService(opts);let cookie='';
+  async function call(path,method='GET',data,extra={}){const req=new Request('http://localhost/order/api'+path,{method,headers:{...(cookie?{cookie}:{}),...(data?{'content-type':'application/json'}:{}),...extra},...(data?{body:JSON.stringify(data)}:{})});const response=await service.handle(req);return {status:response.status,data:await response.json(),response}}
+  assert.equal((await call('/admin/products')).status,401);
+  assert.equal((await call('/login','POST',{username:'test-owner',password:'wrong'})).status,401);
+  const login=await call('/login','POST',{username:opts.username,password:opts.password});assert.equal(login.status,200);cookie=login.response.headers.get('set-cookie').split(';')[0];assert.match(login.response.headers.get('set-cookie'),/HttpOnly; SameSite=Strict/);
+  const original=(await call('/admin/products')).data.products[0];
+  const added=await call('/admin/products','POST',{...original,id:undefined,name:'בדיקת מאפה',price:null,stock:1});assert.equal(added.status,201);const p=added.data.product;
+  assert.equal((await call('/admin/products/'+p.id,'PATCH',{...p,price:0})).status,400);
+  assert.equal((await call('/admin/products/'+p.id,'PATCH',{...p,price:18,hidden:true})).status,200);
+  assert.ok(!(await call('/menu')).data.products.some(x=>x.id===p.id));
+  assert.equal((await call('/admin/products/'+p.id,'PATCH',{...p,revision:0})).status,409);
+  const restored=await call('/admin/products/'+p.id,'PATCH',{...p,revision:1,price:null,hidden:false});assert.equal(restored.status,200);
+  const upload=await service.handle(new Request('http://localhost/order/api/admin/images',{method:'POST',headers:{cookie,'content-type':'image/webp'},body:await readFile('public/images/cinnamon_roll.webp')}));assert.equal(upload.status,201);const image=await upload.json();assert.equal(image.url,'https://res.cloudinary.com/bjorken-test/image/upload/v1/uploaded.jpg');assert.equal(await service.db.connection.db.collection('dishVideos.files').countDocuments(),0);const imageSaved=await call('/admin/products/'+p.id,'PATCH',{...restored.data.product,image:image.url});assert.equal(imageSaved.status,200);assert.equal((await call('/menu')).data.products.find(x=>x.id===p.id).image,image.url);assert.equal((await call('/admin/products/'+p.id,'PATCH',{...imageSaved.data.product,image:'https://res.cloudinary.com/other/image/upload/not-ours.jpg'})).status,400);
+  const futureDate=nextPickupDate(settings,new Date(addDays(israelDate(),1)+'T04:00:00Z'));
+  const b={nonce:randomUUID(),name:'לקוח בדיקה',phone:'0501234567',date:futureDate,pickup:'09:00',notes:'',acknowledged:true,items:[{id:p.id,quantity:1}]};
+  assert.equal((await call('/requests','POST',b)).status,403);
+  const s={...settings,pickupDate:b.date,ordersOpen:true,whatsapp:'0501234567',whatsappVerified:true,ownerApproved:true,imagesApproved:true,catalogApproved:true};
+  // Only this isolated test process enables live policy; no real messages are sent.
+  await service.db.setConfig('business',JSON.stringify(s));process.env.BJORKEN_ENABLE_LIVE='true';
+  const results=await Promise.all([call('/requests','POST',b),call('/requests','POST',{...b,nonce:randomUUID()})]);assert.deepEqual(results.map(x=>x.status).sort(),[201,409]);
+  const accepted=results.find(x=>x.status===201);assert.match(decodeURIComponent(accepted.data.whatsappUrl),/מחיר באישור המאפייה/);assert.equal((await call('/requests','POST',b)).data.id,accepted.data.id);
+  assert.equal(await service.db.count('Order',{}),1);assert.equal((await service.db.one('MenuItem',{id:p.id})).stock,0);
+  let o=(await call('/admin/orders')).data.orders[0];assert.equal(o.status,'pending_confirmation');
+  assert.equal((await call('/admin/orders/'+o.id,'PATCH',{...o,status:'confirmed',priceConfirmed:false,availabilityConfirmed:false})).status,400);
+  const confirmed=await call('/admin/orders/'+o.id,'PATCH',{...o,status:'confirmed',priceConfirmed:true,availabilityConfirmed:true});assert.equal(confirmed.status,200);o=confirmed.data.order;
+  assert.equal((await call('/admin/orders/'+o.id,'PATCH',{...o,status:'cancelled'})).status,200);assert.equal((await service.db.one('MenuItem',{id:p.id})).stock,1);
+  let weekday=addDays(b.date,2);while(!pickupTimes(s,weekday).includes('10:00'))weekday=addDays(weekday,1);
+  const event={...b,nonce:randomUUID(),date:weekday,kind:'event',guests:35,notes:'מאפים למפגש משפחתי',items:[],pickup:'10:00'};
+  const eventResult=await call('/requests','POST',event);assert.equal(eventResult.status,201);assert.match(decodeURIComponent(eventResult.data.whatsappUrl),/מספר משתתפים: 35/);assert.match(decodeURIComponent(eventResult.data.whatsappUrl),/מאפים לאירוע/);assert.ok(!decodeURIComponent(eventResult.data.whatsappUrl).includes('₪0'));
+  const savedEvent=await service.db.one('Order',{id:eventResult.data.id});assert.equal(savedEvent.payload.kind,'event');assert.equal(savedEvent.reserved,false);
+  assert.equal((await call('/requests','POST',{...event,nonce:randomUUID(),guests:0})).status,400);
+  assert.equal((await call('/requests','POST',{...event,nonce:randomUUID(),kind:'takeaway'})).status,400);
+  assert.equal((await call('/requests','POST',{...event,nonce:randomUUID(),date:'2020-01-01'})).status,400);
+  assert.equal((await call('/requests','POST',{...event,nonce:randomUUID(),pickup:'03:00'})).status,400);
+  const storedSettings=(await call('/admin/settings')).data.settings;
+  const daily=await call('/admin/settings','PATCH',{...storedSettings,capacity:1,blockedDates:[weekday],email:'hello@example.com'});assert.equal(daily.status,200);
+  assert.equal((await call('/requests','POST',{...event,nonce:randomUUID()})).status,400);
+  let another=addDays(weekday,1);while(!pickupTimes(daily.data.settings,another).includes('10:00'))another=addDays(another,1);
+  assert.equal((await call('/requests','POST',{...event,nonce:randomUUID(),date:another})).status,201);
+  assert.equal((await call('/requests','POST',{...event,nonce:randomUUID(),date:another})).status,400);
+  let third=addDays(another,1);while(!pickupTimes(daily.data.settings,third).includes('10:00'))third=addDays(third,1);
+  assert.equal((await call('/requests','POST',{...event,nonce:randomUUID(),date:third})).status,201);
+  assert.equal((await call('/menu')).data.settings.email,'hello@example.com');
+  const cross=await call('/admin/settings','PATCH',s,{origin:'https://attacker.example'});assert.equal(cross.status,403);
+  let config=(await call('/admin/settings')).data.settings;
+  const changed=await call('/admin/settings','PATCH',{...config,whatsapp:'0507654321'});assert.equal(changed.status,200);assert.equal(changed.data.settings.whatsappVerified,false);assert.equal((await call('/menu')).data.live,false);
+  const savedId=p.id;await service.close();service=await createService(opts);assert.ok((await call('/menu')).data.products.some(x=>x.id===savedId));assert.equal((await call('/menu')).data.settings.whatsapp,'0507654321');
+  await call('/logout','POST',{});assert.equal((await call('/admin/products')).status,401);
+ }finally{delete process.env.BJORKEN_ENABLE_LIVE;await service?.close();await replica.stop()}
+});

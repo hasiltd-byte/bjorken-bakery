@@ -1,0 +1,4 @@
+import {chromium} from 'playwright';
+import {writeFile} from 'node:fs/promises';
+const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+try{const page=await browser.newPage();await page.goto('https://www.facebook.com/p/%D7%91%D7%99%D7%95%D7%A8%D7%A7%D7%9F-Bj%C3%B6rken-61593858941976/',{waitUntil:'domcontentloaded',timeout:30000});await page.waitForTimeout(4000);const text=await page.locator('body').innerText();const links=await page.locator('a').evaluateAll(a=>a.map(x=>({text:x.innerText,href:x.href})).filter(x=>/mailto:|tel:|maps|waze|מרדכי|Mordekhai/.test(x.href+' '+x.text)));await writeFile('.local/contact-source.json',JSON.stringify({source:page.url(),text,links},null,2));console.log(JSON.stringify({text:text.slice(0,1000),links}));}finally{await browser.close()}

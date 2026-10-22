@@ -1,0 +1,127 @@
+[
+  {
+    "asset": "/images/cheese_pastries.webp",
+    "original": "facebook-2.jpg",
+    "source": "https://www.facebook.com/p/%D7%91%D7%99%D7%95%D7%A8%D7%A7%D7%9F-Bj%C3%B6rken-61593858941976/",
+    "crop": null,
+    "width": 526,
+    "height": 701,
+    "bytes": 88356,
+    "usage": "Preview only; commercial usage requires owner approval"
+  },
+  {
+    "asset": "/images/cinnamon_roll.webp",
+    "original": "instagram-01.jpg",
+    "source": "https://www.instagram.com/_bjorken_/",
+    "crop": null,
+    "width": 485,
+    "height": 640,
+    "bytes": 47744,
+    "usage": "Preview only; commercial usage requires owner approval"
+  },
+  {
+    "asset": "/images/glazed_rolls.webp",
+    "original": "instagram-02.jpg",
+    "source": "https://www.instagram.com/_bjorken_/",
+    "crop": null,
+    "width": 480,
+    "height": 640,
+    "bytes": 58210,
+    "usage": "Preview only; commercial usage requires owner approval"
+  },
+  {
+    "asset": "/images/savory_pastry.webp",
+    "original": "instagram-12.jpg",
+    "source": "https://www.instagram.com/_bjorken_/",
+    "crop": null,
+    "width": 360,
+    "height": 640,
+    "bytes": 24376,
+    "usage": "Preview only; commercial usage requires owner approval"
+  },
+  {
+    "asset": "/images/braided_pastry.webp",
+    "original": "instagram-11.jpg",
+    "source": "https://www.instagram.com/_bjorken_/",
+    "crop": null,
+    "width": 480,
+    "height": 640,
+    "bytes": 31344,
+    "usage": "Preview only; commercial usage requires owner approval"
+  },
+  {
+    "asset": "/images/cake_pan.webp",
+    "original": "instagram-10.jpg",
+    "source": "https://www.instagram.com/_bjorken_/",
+    "crop": null,
+    "width": 485,
+    "height": 640,
+    "bytes": 53872,
+    "usage": "Preview only; commercial usage requires owner approval"
+  },
+  {
+    "asset": "/images/cookie.webp",
+    "original": "instagram-04.jpg",
+    "source": "https://www.instagram.com/_bjorken_/",
+    "crop": {
+      "left": 0,
+      "top": 230,
+      "width": 480,
+      "height": 390
+    },
+    "width": 480,
+    "height": 390,
+    "bytes": 30376,
+    "usage": "Preview only; commercial usage requires owner approval"
+  },
+  {
+    "asset": "/images/sweet_rolls.webp",
+    "original": "instagram-08.jpg",
+    "source": "https://www.instagram.com/_bjorken_/",
+    "crop": null,
+    "width": 480,
+    "height": 640,
+    "bytes": 60698,
+    "usage": "Preview only; commercial usage requires owner approval"
+  },
+  {
+    "asset": "/images/bakery_shop.webp",
+    "original": "instagram-06.jpg",
+    "source": "https://www.instagram.com/_bjorken_/",
+    "crop": null,
+    "width": 485,
+    "height": 640,
+    "bytes": 61474,
+    "usage": "Preview only; commercial usage requires owner approval"
+  },
+  {
+    "asset": "/images/social-coffee.webp",
+    "original": "instagram-04.jpg",
+    "source": "https://www.instagram.com/_bjorken_/",
+    "crop": null,
+    "width": 480,
+    "height": 640,
+    "bytes": 49182,
+    "usage": "Preview only; commercial usage requires owner approval"
+  },
+  {
+    "asset": "/images/social-braids.webp",
+    "original": "facebook-1.jpg",
+    "source": "https://www.facebook.com/p/%D7%91%D7%99%D7%95%D7%A8%D7%A7%D7%9F-Bj%C3%B6rken-61593858941976/",
+    "crop": null,
+    "width": 720,
+    "height": 960,
+    "bytes": 151158,
+    "usage": "Preview only; commercial usage requires owner approval"
+  },
+  {
+    "asset": "/images/social-cookies.webp",
+    "original": "instagram-09.jpg",
+    "source": "https://www.instagram.com/_bjorken_/",
+    "crop": null,
+    "width": 480,
+    "height": 640,
+    "bytes": 65714,
+    "usage": "Preview only; commercial usage requires owner approval"
+  }
+]
