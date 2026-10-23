@@ -29,7 +29,7 @@ test('weekly collection: weekdays, Friday override, Saturday, blocked dates and 
 });
 test('isolated MongoDB: auth, CRUD, images, public persistence, preview, atomic inventory, idempotency and status workflow',async()=>{
  const replica=await MongoMemoryReplSet.create({binary:{downloadDir:'.local/mongodb-binaries'},replSet:{count:1}});let service;
- const opts={mongoUri:replica.getUri('bjorken_test'),dbName:'bjorken_test',username:'test-owner',password:'unique-test-password-32-characters',cloudName:'bjorken-test',imageUploader:async bytes=>{assert.ok(bytes.length>100);return {url:'https://res.cloudinary.com/bjorken-test/image/upload/v1/uploaded.jpg',publicId:'uploaded'}}};
+ const opts={mongoUri:replica.getUri('bjorken_test'),dbName:'bjorken_test',username:'test-owner',password:'test-7',cloudName:'bjorken-test',imageUploader:async bytes=>{assert.ok(bytes.length>100);return {url:'https://res.cloudinary.com/bjorken-test/image/upload/v1/uploaded.jpg',publicId:'uploaded'}}};
  try{
   service=await createService(opts);let cookie='';
   async function call(path,method='GET',data,extra={}){const req=new Request('http://localhost/order/api'+path,{method,headers:{...(cookie?{cookie}:{}),...(data?{'content-type':'application/json'}:{}),...extra},...(data?{body:JSON.stringify(data)}:{})});const response=await service.handle(req);return {status:response.status,data:await response.json(),response}}
