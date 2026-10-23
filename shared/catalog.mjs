@@ -1,3 +1,4 @@
+import {productPhotoMap,preparedPhotoPath} from './product-photo-map.mjs';
 import {weeklyPickup} from './schedule.mjs';
 import {publicContact} from './contact.mjs';
 export const categories={sweet:'מאפים מתוקים',savory:'מאפים מלוחים',bread:'לחמים ולחמניות',cakes:'עוגות',cookies:'עוגיות',friday:'מיוחדים לשישי'};
@@ -9,8 +10,8 @@ export const seedProducts=[
  ['bagel','בייגלה','A LITTLE EVERYDAY','bread',null],
  ['cardamom','מאפי הל','A NORDIC MOMENT','sweet',null],
  ['carrot','לחמניות גזר','ON YOUR TABLE','bread','seeded_rolls.webp'],
- ['yeast','עוגות שמרים','FOR SHARING','cakes','braided_pastry.webp'],
+ ['yeast','עוגת דבש','SOMETHING GOLDEN','cakes','braided_pastry.webp'],
  ['cake','עוגות בחושות','SOMETHING SWEET','cakes','cake_pan.webp'],
  ['cookie','עוגיות','ONE MORE BITE','cookies','cookie.webp'],
  ['friday','מאפי שישי','WEEKEND RITUAL','friday','sweet_rolls.webp']
-].map(([id,name,en,category,image],i)=>({id,name,en,category,image:image?'/images/'+image:'/images/placeholder.svg',description:'פרטי המאפה והזמינות יאושרו על ידי המאפייה.',price:null,salePrice:null,tags:[],illustrative:true,available:true,hidden:false,deleted:false,stock:null,maxPerOrder:20,sku:'',sortOrder:i,revision:0}));
+].map(([id,name,en,category,image],i)=>({id,name,en,category,image:preparedPhotoPath(id),gallery:productPhotoMap[id]?.photos.slice(1).map((_,i)=>preparedPhotoPath(id,i+1))||[],description:'פרטי המאפה והזמינות יאושרו על ידי המאפייה.',price:null,salePrice:null,tags:[],illustrative:true,available:true,hidden:false,deleted:false,stock:null,maxPerOrder:20,sku:'',sortOrder:i,revision:0}));

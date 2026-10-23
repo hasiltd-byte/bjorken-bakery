@@ -45,6 +45,9 @@ test('isolated MongoDB: auth, CRUD, images, public persistence, preview, atomic 
   const restored=await call('/admin/products/'+p.id,'PATCH',{...p,revision:1,price:null,hidden:false});assert.equal(restored.status,200);
   const upload=await service.handle(new Request('http://localhost/order/api/admin/images',{method:'POST',headers:{cookie,'content-type':'image/webp'},body:await readFile('public/images/cinnamon_roll.webp')}));assert.equal(upload.status,201);const image=await upload.json();assert.equal(image.url,'https://res.cloudinary.com/bjorken-test/image/upload/v1/uploaded.jpg');assert.equal(await service.db.connection.db.collection('dishVideos.files').countDocuments(),0);const imageSaved=await call('/admin/products/'+p.id,'PATCH',{...restored.data.product,image:image.url});assert.equal(imageSaved.status,200);assert.equal((await call('/menu')).data.products.find(x=>x.id===p.id).image,image.url);assert.equal((await call('/admin/products/'+p.id,'PATCH',{...imageSaved.data.product,image:'https://res.cloudinary.com/other/image/upload/not-ours.jpg'})).status,400);
   const futureDate=nextPickupDate(settings,new Date(addDays(israelDate(),1)+'T04:00:00Z'));
+  const withGallery=await call('/admin/products/'+p.id,'PATCH',{...imageSaved.data.product,gallery:[image.url,'/images/product-cake-v3.webp']});assert.equal(withGallery.status,200);
+  assert.deepEqual((await call('/menu')).data.products.find(x=>x.id===p.id).gallery,[image.url,'/images/product-cake-v3.webp']);
+  for(const gallery of [['https://res.cloudinary.com/other/image/upload/not-ours.jpg'],['https://example.com/photo.jpg'],Array(9).fill(image.url),'invalid'])assert.equal((await call('/admin/products/'+p.id,'PATCH',{...withGallery.data.product,gallery})).status,400);
   const b={nonce:randomUUID(),name:'לקוח בדיקה',phone:'0501234567',date:futureDate,pickup:'09:00',notes:'',acknowledged:true,items:[{id:p.id,quantity:1}]};
   assert.equal((await call('/requests','POST',b)).status,403);
   const s={...settings,pickupDate:b.date,ordersOpen:true,whatsapp:'0501234567',whatsappVerified:true,ownerApproved:true,imagesApproved:true,catalogApproved:true};
@@ -64,7 +67,7 @@ test('isolated MongoDB: auth, CRUD, images, public persistence, preview, atomic 
   assert.equal((await call('/requests','POST',{...event,nonce:randomUUID(),guests:0})).status,400);
   assert.equal((await call('/requests','POST',{...event,nonce:randomUUID(),kind:'takeaway'})).status,400);
   assert.equal((await call('/requests','POST',{...event,nonce:randomUUID(),date:'2020-01-01'})).status,400);
-  assert.equal((await call('/requests','POST',{...event,nonce:randomUUID(),pickup:'03:00'})).status,400);
+  assert.equal((await call('/requests','POST',{...event,nonce:randomUUID(),pickup:'25:00'})).status,400);
   const storedSettings=(await call('/admin/settings')).data.settings;
   const daily=await call('/admin/settings','PATCH',{...storedSettings,capacity:1,blockedDates:[weekday],email:'hello@example.com'});assert.equal(daily.status,200);
   assert.equal((await call('/requests','POST',{...event,nonce:randomUUID()})).status,400);

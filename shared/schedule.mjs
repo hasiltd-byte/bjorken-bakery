@@ -14,3 +14,21 @@ export function pickupTimes(settings,date,now=new Date()){
 }
 export function nextPickupDate(settings,now=new Date()){const today=israelDate(now);for(let i=0;i<=365;i++){const date=addDays(today,i);if(pickupTimes(settings,date,now).length)return date}return ''}
 export function fridayDate(settings,now=new Date()){const today=israelDate(now);if(validDate(settings.pickupDate)&&settings.pickupDate>=today&&new Date(settings.pickupDate+'T12:00:00Z').getUTCDay()===5&&pickupTimes(settings,settings.pickupDate,now).length)return settings.pickupDate;for(let i=0;i<365;i++){const date=addDays(today,i);if(new Date(date+'T12:00:00Z').getUTCDay()===5&&pickupTimes(settings,date,now).length)return date}return ''}
+const israelClock=now=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(now);
+export function requestDateAvailable(settings,date,kind='takeaway',now=new Date()){
+ if(kind!=='event')return pickupTimes(settings,date,now).length>0;
+ const today=israelDate(now);return validDate(date)&&date>=today&&date<=addDays(today,365)&&!(settings.blockedDates||[]).includes(date)&&(date!==today||israelClock(now)<'23:59');
+}
+export function requestTimeAllowed(settings,date,time,kind='takeaway',now=new Date()){
+ if(kind!=='event')return pickupTimes(settings,date,now).includes(time);
+ return requestDateAvailable(settings,date,kind,now)&&typeof time==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(time)&&(date!==israelDate(now)||time>israelClock(now));
+}
+export function nextRequestDate(settings,kind='takeaway',now=new Date()){
+ if(kind!=='event')return nextPickupDate(settings,now);
+ const today=israelDate(now);for(let n=0;n<=365;n++){const date=addDays(today,n);if(requestDateAvailable(settings,date,kind,now))return date}return '';
+}
+export function eventTimeMinimum(date,now=new Date()){
+ if(date!==israelDate(now))return undefined;
+ const clock=israelClock(now),minutes=Math.min(1439,Number(clock.slice(0,2))*60+Number(clock.slice(3))+1);
+ return String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0');
+}
