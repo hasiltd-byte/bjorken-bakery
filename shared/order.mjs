@@ -1,4 +1,4 @@
-export const statuses=['pending_confirmation','confirmed','preparing','ready','collected','declined','cancelled','out_for_delivery','delivered','not_collected'];
+export const statuses=['pending_confirmation','confirmed','preparing','ready','collected','declined','cancelled','out_for_delivery','delivered','not_collected','expired'];
 export {israelDate} from './schedule.mjs';
 export function normalizedPhone(value){const n=String(value).replace(/[\s()+-]/g,'');return /^05\d{8}$/.test(n)?'972'+n.slice(1):/^9725\d{8}$/.test(n)?n:null}
 // Operational order controls. Editorial image/catalog approvals remain separate publishing records.

@@ -30,7 +30,7 @@ export default function Bakery({design='classic'}:{design?:BakeryDesign}){
  function change(p:Product,d:number){setCart(c=>{const n=Math.max(0,Math.min(limit(p),(c[p.id]||0)+d)),copy={...c};if(n)copy[p.id]=n;else delete copy[p.id];return copy});setWa('');setMessage('');setHandoff('');setTracking('')}
  function payload(){return {...details,guests:details.kind==='event'?Number(details.guests):null,items:lines.map(p=>({id:p.id,name:p.name,price:p.salePrice??p.price,quantity:cart[p.id]}))}}
  function finishHandoff(url:string){
-  setHandoff(url);setCart({});try{localStorage.removeItem('bjorken-cart')}catch{}
+  setHandoff(url);setNotice('הבקשה נשמרה וממתינה לשליחה ב־WhatsApp ולאישור העסק. חובה ללחוץ שליחה בתוך WhatsApp. מלאי זמני משתחרר אם הבקשה לא אושרה בתוך '+settings.requestHoldMinutes+' דקות.');setCart({});try{localStorage.removeItem('bjorken-cart')}catch{}
   setOpened(false);nonce.current='';sentFingerprint.current='';
   setDetails(d=>({...d,kind:'takeaway',date:nextPickupDate(settings),pickup:'',guests:'',notes:'',coupon:'',acknowledged:false}));
  }
@@ -44,7 +44,7 @@ export default function Bakery({design='classic'}:{design?:BakeryDesign}){
    if(whatsappWindow){whatsappWindow.opener=null;whatsappWindow.document.title='פותחים WhatsApp…'}
    const fingerprint=JSON.stringify(data);if(sentFingerprint.current!==fingerprint){nonce.current=crypto.randomUUID();sentFingerprint.current=fingerprint}
    const res=await fetch('/order/api/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...data,nonce:nonce.current,items:data.items.map(({id,quantity})=>({id,quantity}))})});
-   const result=await res.json();if(!res.ok)throw Error(result.error);setTracking(result.trackingUrl||'');
+   const result=await res.json();if(!res.ok){if(res.status===410){sentFingerprint.current='';nonce.current=''}throw Error(result.error)}setTracking(result.trackingUrl||'');
    if(whatsappWindow&&!whatsappWindow.closed){whatsappWindow.location.replace(result.whatsappUrl);finishHandoff(result.whatsappUrl)}
    else{setWa(result.whatsappUrl);setMessage('הבקשה נשמרה. לפתיחת WhatsApp בלשונית חדשה ולהשלמת הפנייה לחצו על הכפתור למטה, ואז על שליחה בתוך WhatsApp.');setReview(true)}
   }catch(e){whatsappWindow?.close();setError((e as Error).message)}finally{setBusy(false)}
@@ -56,7 +56,7 @@ export default function Bakery({design='classic'}:{design?:BakeryDesign}){
  const heroProduct=design==='sunlight'?products.find(p=>p.id==='sticky'):design==='hearth'?products.find(p=>p.id==='friday'):null;
  const heroImage=heroProduct?.image||settings.heroImage,heroTitle=heroProduct?.name||'מאפים של ביורקן';
  const storyProduct=design==='classic'?null:products.find(p=>p.id==='yeast'),storyImage=storyProduct?.image||'/images/bakery_shop.webp';
- return <div className={'bakery-site design-'+design}>{design!=='classic'&&<DesignSwitcher design={design}/>}{design==='classic'&&<aside className="design-invitation" aria-label="חלופות עיצוב לבחירה"><span>בוחרים את העיצוב לביורקן</span><a href="/designs">לעיצובים הנוספים <ArrowUpLeft size={17}/></a></aside>}<a className="skip" href="#menu">דילוג לתפריט</a><div className="preview-bar"><span className="status-dot"/>{live?'בקשות הזמנה פתוחות · תשלום באיסוף':'בקשות ההזמנה סגורות כרגע · נשמח לעזור בצור קשר'}</div>
+ return <div className={'bakery-site design-'+design}>{design!=='classic'&&<DesignSwitcher design={design}/>}{design==='classic'&&<aside className="design-invitation" aria-label="חלופות עיצוב לבחירה"><span>בוחרים את העיצוב לביורקן</span><a href="/designs">לעיצובים הנוספים <ArrowUpLeft size={17}/></a></aside>}<a className="skip" href="#menu">דילוג לתפריט</a><div className="preview-bar"><span className="status-dot"/>{live?'בקשות הזמנה פתוחות · ממתינות לאישור העסק':'בקשות ההזמנה סגורות כרגע · נשמח לעזור בצור קשר'}</div>
  <header className="site-header"><a className="wordmark" href={design==='classic'?'/':'/designs/'+design} aria-label="ביורקן דף הבית">Björken<span>ביורקן · מאפיית בוטיק</span></a><nav id="bakery-navigation" className={menuOpen?'is-open':''} aria-label="ניווט ראשי" onClick={()=>setMenuOpen(false)}><a href="#menu">המאפים שלנו</a><a href="#story">הסיפור שלנו</a><a href="#visit">מיקום ושעות</a><a href="#contact">צור קשר</a></nav><button className="mobile-menu-toggle" aria-label={menuOpen?'סגירת תפריט':'פתיחת תפריט'} aria-controls="bakery-navigation" aria-expanded={menuOpen} onClick={()=>setMenuOpen(!menuOpen)}>{menuOpen?<X size={21}/>:<MenuIcon size={21}/>}</button><button className="header-cart" onClick={()=>setOpened(true)} aria-label={'פתיחת סל, '+count+' פריטים'}><ShoppingBag size={19}/><span>הסל שלי</span><b>{count}</b></button></header>
  <main><BakeryHero design={design} headline={settings.headline} description={settings.description} address={settings.address} image={heroImage} imageTitle={heroTitle} onOrder={chooseFriday} onPhoto={()=>setPhoto({image:heroImage,title:heroTitle,product:heroProduct||undefined})}/>
  <div className="friday-strip"><span className="sun">✳</span><div><strong>{stale?'נתראה במאפייה':settings.banner}</strong><span>זוהי בקשת הזמנה. המאפים, המחיר ושעת האיסוף יאושרו על ידי המאפייה ב-WhatsApp.</span></div><a href="#menu">בוחרים משהו טוב <ArrowLeft size={17}/></a></div>

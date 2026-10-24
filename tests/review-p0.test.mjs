@@ -46,7 +46,7 @@ test('P0 inventory: stale content form, two employees/tabs, cancellation and pro
 
 test('P0 receipts use verification month, include redelivery/refunds and never invent dates for historical payments',async()=>{
  const f=await pilotFixture();try{
-  await f.license('ordersPro');const store=scopedStore(f.db,'bjorken','live');
+  await f.enableShop();await f.license('ordersPro');const store=scopedStore(f.db,'bjorken','live');
   const previous=Date.parse('2026-09-30T12:00:00Z'),paid=Date.parse('2026-10-01T12:00:00Z');
   const id=randomUUID();await f.db.create('Order',{id,nonce:randomUUID(),businessId:'bjorken',status:'confirmed',created_at:previous,updated_at:previous,payload:{items:[{id:'cinnamon',name:'מאפה',quantity:1,price:20}],kind:'takeaway'},paymentRecord:{amountCents:2000,verifiedAt:paid,reference:'test-only'}});
   await f.db.create('Order',{id:randomUUID(),nonce:randomUUID(),businessId:'bjorken',status:'confirmed',created_at:previous,payload:{items:[],kind:'takeaway'},paymentRecord:{amountCents:90000,reference:'undated-legacy'}});
