@@ -4,6 +4,7 @@ import {spawn} from 'node:child_process';
 import {mkdir} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {createService} from '../lib/server/service.mjs';
+import {captureTrainingSet} from './training-captures.mjs';
 import {checkExperienceUi} from './check-experience-ui.mjs';
 import {checkPaidCostEditor,checkPaidProfitabilityUi} from './check-paid-profitability-ui.mjs';
 import {checkPilotDeliveryUi} from './check-pilot-delivery-ui.mjs';
@@ -18,8 +19,9 @@ try{
  await checkPaidCostEditor(page);await checkPilotDeliveryUi(page,context,root);await checkPaidProfitabilityUi(page,root);await page.getByRole('button',{name:'מועדון וקופונים',exact:true}).click();await page.getByRole('heading',{name:'מועדון, מבצעים וקופונים',exact:true}).waitFor();
  const signup=await context.newPage();await signup.goto(root+'/club?space=demo');await signup.getByLabel('שם',{exact:true}).fill('חבר בדיקת דפדפן');await signup.getByLabel('טלפון',{exact:true}).fill('0501234567');await signup.locator('input[name=privacy]').check();assert.equal(await signup.locator('input[name=marketing]').isChecked(),false);await signup.getByRole('button',{name:'הצטרפות למועדון',exact:true}).click();await signup.getByRole('link',{name:'שמרו את הקישור האישי לניהול ולהסרה ↗'}).click();await signup.getByRole('button',{name:'הסרה מעדכונים שיווקיים',exact:true}).click();await signup.getByRole('status').waitFor();
  await page.getByRole('button',{name:'משוב',exact:true}).click();await page.getByRole('heading',{name:'משוב וביקורות',exact:true}).waitFor();await page.getByRole('button',{name:'דוחות',exact:true}).click();await page.getByRole('heading',{name:'תמונת מצב עסקית',exact:true}).waitFor();await page.getByText('תקבולים ידניים מאומתים בניכוי זיכויים',{exact:true}).waitFor();
- for(const width of [1440,768,430,390,360,320]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'workspace overflow '+width)}
+ for(const width of [1600,1440,1280,768,430,390,375,360,320]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'workspace overflow '+width)}
  await checkExperienceUi(page,context,root);
+ await captureTrainingSet(page,context,root);
  await page.goto(root+'/install');await page.getByRole('heading',{name:'ביורקן, במסך הבית שלכם.',exact:true}).waitFor();await page.evaluate(()=>navigator.serviceWorker.ready);await page.screenshot({path:'.qa/pilot/install.png',fullPage:true});const keys=await page.evaluate(()=>caches.keys());assert.ok(keys.includes('bjorken-public-shell-v1'));const cached=await page.evaluate(async()=>{const cache=await caches.open('bjorken-public-shell-v1');return (await cache.keys()).map(r=>new URL(r.url).pathname)});assert.ok(cached.every(p=>p==='/offline.html'||p.startsWith('/pwa/')));
  await context.setOffline(true);await page.goto(root+'/');await page.getByRole('heading',{name:'Björken | ביורקן',exact:true}).waitFor();assert.ok((await page.locator('body').innerText()).includes('אי אפשר לשלוח או לאשר הזמנה'));await context.setOffline(false);assert.deepEqual(errors,[]);
  console.log('PASS: isolated employee workspace, production/seller UI, club signup and unsubscribe, reports, 320–1440 responsive, actual manifest/PNG QR/service worker/offline shell, no customer/API caches, no live messages/payments.');

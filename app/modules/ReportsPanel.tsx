@@ -2,7 +2,7 @@
 import {useState} from 'react';
 import {useWorkspaceData,type Data} from './useWorkspace';
 import {israelDate} from '../../shared/schedule.mjs';
-const money=(n:number)=>'₪'+((n||0)/100).toLocaleString('he-IL',{minimumFractionDigits:2,maximumFractionDigits:2});
+const money=(n:number|null)=>n==null?'לא ידוע':'₪'+(n/100).toLocaleString('he-IL',{minimumFractionDigits:2,maximumFractionDigits:2});
 export default function ReportsPanel({space}:{space:string}){
  const [date,setDate]=useState(israelDate()),[period,setPeriod]=useState('day'),{data,error}=useWorkspaceData('/reports?period='+period+'&date='+date,space);
  const cards=data?{'בקשות הזמנה':data.orders,'הזמנות מאושרות מבקשות התקופה':data.confirmedOrders,'בקשות משלוח קבוצתי':data.groupOrders,'ביטולים / דחיות':data.cancellations,'כסף שהתקבל ואומת בתקופה':money(data.verifiedReceiptsCents),'החזרים שאומתו בתקופה':money(data.verifiedRefundsCents),'תקבולים ידניים מאומתים בניכוי זיכויים':money(data.verifiedRevenueCents),'דמי משלוח שהתקבלו':money(data.shippingReceiptsCents),'יתרות ידועות של בקשות התקופה':money(data.knownBalancesCents),'שווי מוצרים ידוע בבקשות — אינו תקבול':money(data.knownRequestValueCents),'בקשות עם מחיר לא מאושר':data.unknownPriceOrders}:null;

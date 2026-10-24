@@ -1,0 +1,2 @@
+import {helpTopics,roleNames} from '../shared/help.mjs';
+export default function HelpButton({topic,role='admin'}:{topic:string;role?:string}){const content=(helpTopics as Record<string,{title:string;steps:string[]}>)[topic]||helpTopics.home;return <details className="context-help"><summary>איך משתמשים?</summary><h3>{content.title}</h3><p>עזרה ל{(roleNames as Record<string,string>)[role]||'משתמש'}. הרשאות בפועל נקבעות בשרת.</p><ol>{content.steps.map(step=><li key={step}>{step}</li>)}</ol><a href={'/help?role='+encodeURIComponent(role)}>למדריך המלא לפי תפקיד</a></details>}
