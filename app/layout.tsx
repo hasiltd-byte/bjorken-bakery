@@ -10,6 +10,6 @@ export const metadata:Metadata={
  description:'מאפיית בוטיק בנאות מרדכי. בקשות למאפים לשישי ולאיסוף במאפייה.',
  robots:{index:false,follow:false},
  openGraph:{title:'Björken | ביורקן',description:'מאפים. קפה. רגע גלילי.',siteName:'Björken | ביורקן',url:siteUrl,locale:'he_IL',type:'website',images:[shareImage]},
- twitter:{card:'summary_large_image',title:'Björken | ביורקן',description:'מאפים. קפה. רגע גלילי.',images:['/images/bjorken-og-v1.jpg']},
+ twitter:{card:'summary_large_image',title:'Björken | ביורקן',description:'מאפים. קפה. רגע גלילי.',images:[shareImage.url]},
 };
 export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="he" dir="rtl"><body><PwaRegistration/>{children}</body></html>}

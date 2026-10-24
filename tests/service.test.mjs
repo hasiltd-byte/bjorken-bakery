@@ -15,17 +15,17 @@ test('Preview gates, Israeli dates and nullable pricing',()=>{
  const msg=orderMessage({name:'בדיקה',phone:'0501234567',date:'2026-10-23',pickup:'09:00',items:[{name:'מאפה',price:null,quantity:2}]});assert.match(msg,/מחיר באישור המאפייה/);assert.ok(!msg.includes('₪0'));
 });
 test('weekly collection: weekdays, Friday override, Saturday, blocked dates and elapsed Israel time',()=>{
- const now=new Date('2026-10-22T11:10:00Z');
- assert.equal(pickupTimes(settings,'2026-10-25',now)[0],'07:30');
- assert.equal(pickupTimes(settings,'2026-10-25',now).at(-1),'15:30');
- assert.deepEqual(pickupTimes(settings,'2026-10-24',now),[]);
- assert.equal(pickupTimes(settings,'2026-10-23',now)[0],'08:00');
- assert.equal(pickupTimes(settings,'2026-10-23',now).at(-1),'12:30');
- assert.equal(pickupTimes(settings,'2026-10-22',now)[0],'14:30');
- assert.deepEqual(pickupTimes({...settings,blockedDates:['2026-10-25']},'2026-10-25',now),[]);
- assert.deepEqual(pickupTimes(settings,'2026-02-30',now),[]);
- assert.deepEqual(pickupTimes(settings,'2026-10-21',now),[]);
- assert.equal(fridayDate(settings,now),'2026-10-23');
+ const fixedSettings={...settings,pickupDate:'2026-10-23'};const now=new Date('2026-10-22T11:10:00Z');
+ assert.equal(pickupTimes(fixedSettings,'2026-10-25',now)[0],'07:30');
+ assert.equal(pickupTimes(fixedSettings,'2026-10-25',now).at(-1),'15:30');
+ assert.deepEqual(pickupTimes(fixedSettings,'2026-10-24',now),[]);
+ assert.equal(pickupTimes(fixedSettings,'2026-10-23',now)[0],'08:00');
+ assert.equal(pickupTimes(fixedSettings,'2026-10-23',now).at(-1),'12:30');
+ assert.equal(pickupTimes(fixedSettings,'2026-10-22',now)[0],'14:30');
+ assert.deepEqual(pickupTimes({...fixedSettings,blockedDates:['2026-10-25']},'2026-10-25',now),[]);
+ assert.deepEqual(pickupTimes(fixedSettings,'2026-02-30',now),[]);
+ assert.deepEqual(pickupTimes(fixedSettings,'2026-10-21',now),[]);
+ assert.equal(fridayDate(fixedSettings,now),'2026-10-23');
 });
 test('isolated MongoDB: auth, CRUD, images, public persistence, preview, atomic inventory, idempotency and status workflow',async()=>{
  const replica=await MongoMemoryReplSet.create({binary:{downloadDir:'.local/mongodb-binaries'},replSet:{count:1}});let service;

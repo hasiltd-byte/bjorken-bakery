@@ -1,0 +1,8 @@
+import sharp from 'sharp';
+import QRCode from 'qrcode';
+import {publicShareOrigin} from '../../../shared/sharing.mjs';
+import {dispatch} from '../../../lib/server/runtime.mjs';
+export const runtime='nodejs';
+export const dynamic='force-dynamic';
+const escape=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+export async function GET(request){const origin=publicShareOrigin(process.env.NEXT_PUBLIC_SITE_URL);if(!origin)return Response.json({error:'שיתוף ציבורי זמין לאחר הגדרת דומיין HTTPS.'},{status:409});const response=await dispatch(new Request(new URL('/order/api/pwa/profile',request.url)));if(!response.ok)return response;const profile=await response.json(),image=await sharp('public/images/bjorken-og-v2.jpg').resize(1000,1000,{fit:'contain',background:'#f8f6ef'}).png().toBuffer(),qr=await QRCode.toBuffer(origin,{width:300,margin:2});const overlay=Buffer.from(`<svg width="1080" height="1920"><rect width="1080" height="1920" fill="#f8f6ef"/><text x="540" y="130" text-anchor="middle" font-family="Arial" font-size="56" fill="#354c3d">${escape(profile.name)}</text><text x="540" y="1660" text-anchor="middle" font-family="Arial" font-size="30" fill="#354c3d">${escape(new URL(origin).hostname)}</text><text x="540" y="1760" text-anchor="middle" font-family="Arial" font-size="40" fill="#354c3d">סרקו לתפריט ולהזמנה</text></svg>`);return new Response(await sharp(overlay).composite([{input:image,left:40,top:190},{input:qr,left:390,top:1270}]).png().toBuffer(),{headers:{'Content-Type':'image/png','Content-Disposition':'attachment; filename="bakery-story.png"','Cache-Control':'no-store'}})}

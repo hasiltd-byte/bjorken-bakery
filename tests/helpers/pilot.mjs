@@ -8,7 +8,7 @@ export async function pilotFixture(){
  const cookies={};
  async function call(path,method='GET',data,role='admin'){
   const cookie=cookies[role]||'';const response=await service.handle(new Request('http://localhost/order/api'+path,{method,headers:{...(cookie?{cookie}:{}),...(data?{'content-type':'application/json'}:{})},body:data?JSON.stringify(data):undefined}));
-  return {status:response.status,data:await response.json(),response};
+  return {status:response.status,data:response.headers.get('content-type')?.includes('application/json')?await response.json():await response.text(),response};
  }
  cookies.admin=(await call('/login','POST',{username:'review-owner',password:'Isolated-owner-pass-2026'})).response.headers.get('set-cookie').split(';')[0];
  async function staff(role){const username='review-'+role;await call('/modules/staff','POST',{username,password:'Isolated-staff-pass-2026',role});cookies[role]=(await call('/login','POST',{username,password:'Isolated-staff-pass-2026'})).response.headers.get('set-cookie').split(';')[0]}
