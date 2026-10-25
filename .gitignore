@@ -6,3 +6,5 @@ node_modules/
 .qa/
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel/
