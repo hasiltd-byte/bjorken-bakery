@@ -11,7 +11,10 @@
     "test:browser": "node scripts/browser-check.mjs",
     "test:pilot": "node scripts/pilot-browser-check.mjs",
     "test:delivery-calculator": "node scripts/check-delivery-calculator.mjs",
-    "preview:pilot": "node scripts/pilot-preview.mjs --seed-demo"
+    "preview:pilot": "node scripts/pilot-preview.mjs --seed-demo",
+    "owner:inspect": "node scripts/setup-owner.mjs",
+    "owner:setup": "node scripts/setup-owner.mjs",
+    "test:owner-browser": "node scripts/check-owner-activation.mjs"
   },
   "engines": {
     "node": ">=22.13"
