@@ -1,0 +1,8 @@
+'use client';
+import {useState} from 'react';
+import {request,type Data} from './useWorkspace';
+export default function StaffSecurityActions({user,onChanged}:{user:Data;onChanged:()=>void}){const [error,setError]=useState(''),[temporary,setTemporary]=useState(''),[busy,setBusy]=useState(false);return <div>
+ <label>שינוי תפקיד — ינתק התחברויות פעילות<select value={user.role} disabled={busy} onChange={async e=>{setBusy(true);setError('');try{await request('/modules/staff/'+user.username,'PATCH',{role:e.target.value});onChanged()}catch(e){setError((e as Error).message)}finally{setBusy(false)}}}>{Object.entries({manager:'מנהל',cashier:'מוכר',kitchen:'אופה',driver:'שליח'}).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
+ <details><summary>איפוס סיסמת עובד לאחר אימות מנהל</summary><form onSubmit={async e=>{e.preventDefault();const form=e.currentTarget;setBusy(true);setError('');try{const result=await request('/modules/staff/'+user.username+'/reset-password','POST',{ownerPassword:new FormData(form).get('ownerPassword')});setTemporary(result.temporaryPassword);form.reset();onChanged()}catch(e){setError((e as Error).message)}finally{setBusy(false)}}}><label>סיסמת המנהל הנוכחית<input type="password" name="ownerPassword" required autoComplete="current-password"/></label><button className="secondary" disabled={busy}>יצירת סיסמה זמנית וניתוק העובד</button></form></details>
+ {temporary&&<div className="pilot-banner"><p>מסרו לעובד רק לאחר אימות זהותו. בכניסה הבאה יידרש להחליף סיסמה:</p><code dir="ltr">{temporary}</code><button className="secondary" onClick={()=>setTemporary('')}>הסתרת הסיסמה</button></div>}{error&&<p className="pilot-error" role="alert">{error}</p>}
+ </div>}

@@ -15,21 +15,21 @@ test('Preview gates, Israeli dates and nullable pricing',()=>{
  const msg=orderMessage({name:'בדיקה',phone:'0501234567',date:'2026-10-23',pickup:'09:00',items:[{name:'מאפה',price:null,quantity:2}]});assert.match(msg,/מחיר באישור המאפייה/);assert.ok(!msg.includes('₪0'));
 });
 test('weekly collection: weekdays, Friday override, Saturday, blocked dates and elapsed Israel time',()=>{
- const now=new Date('2026-10-22T11:10:00Z');
- assert.equal(pickupTimes(settings,'2026-10-25',now)[0],'07:30');
- assert.equal(pickupTimes(settings,'2026-10-25',now).at(-1),'15:30');
- assert.deepEqual(pickupTimes(settings,'2026-10-24',now),[]);
- assert.equal(pickupTimes(settings,'2026-10-23',now)[0],'08:00');
- assert.equal(pickupTimes(settings,'2026-10-23',now).at(-1),'12:30');
- assert.equal(pickupTimes(settings,'2026-10-22',now)[0],'14:30');
- assert.deepEqual(pickupTimes({...settings,blockedDates:['2026-10-25']},'2026-10-25',now),[]);
- assert.deepEqual(pickupTimes(settings,'2026-02-30',now),[]);
- assert.deepEqual(pickupTimes(settings,'2026-10-21',now),[]);
- assert.equal(fridayDate(settings,now),'2026-10-23');
+ const fixedSettings={...settings,pickupDate:'2026-10-23'};const now=new Date('2026-10-22T11:10:00Z');
+ assert.equal(pickupTimes(fixedSettings,'2026-10-25',now)[0],'07:30');
+ assert.equal(pickupTimes(fixedSettings,'2026-10-25',now).at(-1),'15:30');
+ assert.deepEqual(pickupTimes(fixedSettings,'2026-10-24',now),[]);
+ assert.equal(pickupTimes(fixedSettings,'2026-10-23',now)[0],'08:00');
+ assert.equal(pickupTimes(fixedSettings,'2026-10-23',now).at(-1),'12:30');
+ assert.equal(pickupTimes(fixedSettings,'2026-10-22',now)[0],'14:30');
+ assert.deepEqual(pickupTimes({...fixedSettings,blockedDates:['2026-10-25']},'2026-10-25',now),[]);
+ assert.deepEqual(pickupTimes(fixedSettings,'2026-02-30',now),[]);
+ assert.deepEqual(pickupTimes(fixedSettings,'2026-10-21',now),[]);
+ assert.equal(fridayDate(fixedSettings,now),'2026-10-23');
 });
 test('isolated MongoDB: auth, CRUD, images, public persistence, preview, atomic inventory, idempotency and status workflow',async()=>{
  const replica=await MongoMemoryReplSet.create({binary:{downloadDir:'.local/mongodb-binaries'},replSet:{count:1}});let service;
- const opts={mongoUri:replica.getUri('bjorken_test'),dbName:'bjorken_test',username:'test-owner',password:'test-7',cloudName:'bjorken-test',imageUploader:async bytes=>{assert.ok(bytes.length>100);return {url:'https://res.cloudinary.com/bjorken-test/image/upload/v1/uploaded.jpg',publicId:'uploaded'}}};
+ const opts={mongoUri:replica.getUri('bjorken_test'),dbName:'bjorken_test',username:'test-owner',password:'Isolated-test-pass-2026',cloudName:'bjorken-test',imageUploader:async bytes=>{assert.ok(bytes.length>100);return {url:'https://res.cloudinary.com/bjorken-test/image/upload/v1/uploaded.jpg',publicId:'uploaded'}}};
  try{
   service=await createService(opts);let cookie='';
   async function call(path,method='GET',data,extra={}){const req=new Request('http://localhost/order/api'+path,{method,headers:{...(cookie?{cookie}:{}),...(data?{'content-type':'application/json'}:{}),...extra},...(data?{body:JSON.stringify(data)}:{})});const response=await service.handle(req);return {status:response.status,data:await response.json(),response}}
@@ -53,11 +53,12 @@ test('isolated MongoDB: auth, CRUD, images, public persistence, preview, atomic 
   const s={...settings,pickupDate:b.date,ordersOpen:true,whatsapp:'0501234567',whatsappVerified:true,ownerApproved:true,imagesApproved:true,catalogApproved:true};
   // Only this isolated test process enables live policy; no real messages are sent.
   await service.db.setConfig('business',JSON.stringify(s));process.env.BJORKEN_ENABLE_LIVE='true';
-  const results=await Promise.all([call('/requests','POST',b),call('/requests','POST',{...b,nonce:randomUUID()})]);assert.deepEqual(results.map(x=>x.status).sort(),[201,409]);
-  const accepted=results.find(x=>x.status===201);assert.match(decodeURIComponent(accepted.data.whatsappUrl),/מחיר באישור המאפייה/);assert.equal((await call('/requests','POST',b)).data.id,accepted.data.id);
+  const competing={...b,nonce:randomUUID()};const results=await Promise.all([call('/requests','POST',b),call('/requests','POST',competing)]);assert.deepEqual(results.map(x=>x.status).sort(),[201,409]);
+  const accepted=results.find(x=>x.status===201),acceptedPayload=results[0].status===201?b:competing;assert.match(decodeURIComponent(accepted.data.whatsappUrl),/מחיר באישור המאפייה/);assert.equal((await call('/requests','POST',acceptedPayload)).data.id,accepted.data.id);
   assert.equal(await service.db.count('Order',{}),1);assert.equal((await service.db.one('MenuItem',{id:p.id})).stock,0);
   let o=(await call('/admin/orders')).data.orders[0];assert.equal(o.status,'pending_confirmation');
   assert.equal((await call('/admin/orders/'+o.id,'PATCH',{...o,status:'confirmed',priceConfirmed:false,availabilityConfirmed:false})).status,400);
+  o=(await call('/admin/orders/'+o.id+'/quote','PATCH',{updated_at:o.updated_at,unitPrices:{[p.id]:18},customerAgreed:true,customerAgreementReference:'isolated-confirmed-phone-call'})).data.order;
   const confirmed=await call('/admin/orders/'+o.id,'PATCH',{...o,status:'confirmed',priceConfirmed:true,availabilityConfirmed:true});assert.equal(confirmed.status,200);o=confirmed.data.order;
   assert.equal((await call('/admin/orders/'+o.id,'PATCH',{...o,status:'cancelled'})).status,200);assert.equal((await service.db.one('MenuItem',{id:p.id})).stock,1);
   let weekday=addDays(b.date,2);while(!pickupTimes(s,weekday).includes('10:00'))weekday=addDays(weekday,1);

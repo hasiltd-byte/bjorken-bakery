@@ -5,7 +5,7 @@ export async function checkDesignOptionOrdering(context,root,errors){
   const page=await context.newPage();await page.setViewportSize({width:1440,height:1000});page.on('pageerror',e=>errors.push(e.message));
   await page.goto(root+'/designs/'+design);await page.waitForSelector('.product-card');
   assert.equal(await page.locator('.design-switcher a[aria-current=page]').count(),1);
-  for(const width of [1440,768,430,390,360,320]){
+  for(const width of [1600,1440,1280,768,430,390,375,360,320]){
    await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,design+' overflow at '+width);
    assert.ok(await page.locator('.product-photo img').evaluateAll(images=>images.every(image=>getComputedStyle(image).objectFit==='cover'&&getComputedStyle(image).filter==='none')));
    if(width<=430){await page.getByRole('button',{name:'פתיחת תפריט',exact:true}).click();await page.locator('#bakery-navigation').getByRole('link',{name:'המאפים שלנו',exact:true}).click()}
